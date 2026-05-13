@@ -233,49 +233,26 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
 # ─── MAIN (TUZATILGAN QISIM) ──────────────────────────────────────────────────
 async def main():
-    # Python 3.14 dagi Attribute errorni oldini olish uchun Application'ni oddiyroq yaratamib
+    # Application yaratish
     app = Application.builder().token(BOT_TOKEN).build()
 
-    conv = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
-        states={
-            MAIN_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, main_menu)],
-            ORDER_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, order_name)],
-            ORDER_PHONE: [MessageHandler(filters.CONTACT | filters.TEXT & ~filters.COMMAND, order_phone)],
-            ORDER_ADDRESS: [MessageHandler(filters.TEXT & ~filters.COMMAND, order_address)],
-            ORDER_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, order_type)],
-            ORDER_QTY: [MessageHandler(filters.TEXT & ~filters.COMMAND, order_qty)],
-            ORDER_CONFIRM: [MessageHandler(filters.TEXT & ~filters.COMMAND, order_confirm)],
-        },
-        fallbacks=[CommandHandler("start", start)],
-    )
-
+    # Handlerlarni qo'shish
     app.add_handler(conv)
     app.add_handler(CommandHandler("help", help_command))
 
-    logger.info("Bot tayyorlanmoqda...")
-    
-    # Python 3.14 va Render uchun loopni qo'lda boshqaramiz
+    # Render uchun botni ishga tushirish
     async with app:
         await app.initialize()
         await app.start()
-        logger.info("Bot ishga tushdi!")
+        logger.info("Bot 3.12 versiyada ishga tushdi!")
         await app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
         
-        # Renderda bot o'chib qolmasligi uchun cheksiz kutish
-        try:
-            while True:
-                await asyncio.sleep(3600)
-        except (KeyboardInterrupt, SystemExit):
-            await app.updater.stop()
-            await app.stop()
-            await app.shutdown()
+        # Bot to'xtab qolmasligi uchun
+        while True:
+            await asyncio.sleep(3600)
 
 if __name__ == "__main__":
-    # Render va yangi asyncio uchun eng xavfsiz ishga tushirish
     try:
-        if sys.platform == 'win32':
-            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
         pass
