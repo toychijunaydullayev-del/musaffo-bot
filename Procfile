@@ -1,1 +1,1 @@
-worker: python musaffo_bot.py
+python musaffo_bot.py
