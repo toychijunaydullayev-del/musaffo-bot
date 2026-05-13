@@ -5,6 +5,7 @@ Ishlatish: pip install python-telegram-bot
 
 import logging
 import asyncio
+import sys
 from telegram import (
     Update,
     ReplyKeyboardMarkup,
@@ -53,7 +54,6 @@ PRICES = {
     "1 litr":      400,
 }
 
-# ─── SUV HAQIDA BO'LIMI ───────────────────────────────────────────────────────
 WATER_PHOTOS = [
     "https://i.ibb.co/0jj9LFjJ/1.jpg",
     "https://i.ibb.co/JRyjRngF/2.jpg",
@@ -126,7 +126,7 @@ def confirm_keyboard():
 def back_keyboard():
     return ReplyKeyboardMarkup([["🏠 Asosiy menyu"]], resize_keyboard=True)
 
-# ─── Admin va Handler funksiyalar ─────────────────────────────────────────────
+# ─── Handlerlar ───────────────────────────────────────────────────────────────
 async def notify_admin(context: ContextTypes.DEFAULT_TYPE, d: dict, user_id: int, username: str):
     bonus_line = f"🎁 Bonus: {d['bonus']} ta bepul\n" if d.get("bonus") else ""
     uname = f"@{username}" if username else "username yo'q"
@@ -206,12 +206,10 @@ async def order_qty(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         qty = int(update.message.text)
         if qty < 1: raise ValueError
     except: return ORDER_QTY
-    
     d = context.user_data
     d["qty"] = qty
     d["total"] = PRICES[d["water_type"]] * qty
     d["bonus"] = qty // 10
-    
     summary = f"👤 Ism: {d['name']}\n💧 Hajm: {d['water_type']}\n🔢 Miqdor: {qty}\n💰 Jami: {d['total']:,} so'm\nTasdiqlaysizmi?"
     await update.message.reply_text(summary, reply_markup=confirm_keyboard())
     return ORDER_CONFIRM
@@ -233,9 +231,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     await update.message.reply_text("Yordam uchun: /start", reply_markup=main_keyboard())
     return MAIN_MENU
 
-# ─── MAIN ─────────────────────────────────────────────────────────────────────
+# ─── MAIN (TUZATILGAN QISIM) ──────────────────────────────────────────────────
 async def main():
-    # Application yaratish
+    # Python 3.14 dagi Attribute errorni oldini olish uchun Application'ni oddiyroq yaratamib
     app = Application.builder().token(BOT_TOKEN).build()
 
     conv = ConversationHandler(
@@ -255,13 +253,29 @@ async def main():
     app.add_handler(conv)
     app.add_handler(CommandHandler("help", help_command))
 
-    logger.info("Bot ishga tushdi...")
+    logger.info("Bot tayyorlanmoqda...")
     
-    # Render va Python 3.14 uchun eng muhim sozlama: close_loop=False
-    await app.run_polling(allowed_updates=Update.ALL_TYPES, close_loop=False)
+    # Python 3.14 va Render uchun loopni qo'lda boshqaramiz
+    async with app:
+        await app.initialize()
+        await app.start()
+        logger.info("Bot ishga tushdi!")
+        await app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
+        
+        # Renderda bot o'chib qolmasligi uchun cheksiz kutish
+        try:
+            while True:
+                await asyncio.sleep(3600)
+        except (KeyboardInterrupt, SystemExit):
+            await app.updater.stop()
+            await app.stop()
+            await app.shutdown()
 
 if __name__ == "__main__":
+    # Render va yangi asyncio uchun eng xavfsiz ishga tushirish
     try:
+        if sys.platform == 'win32':
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
-        logger.info("Bot to'xtatildi.")
+        pass
