@@ -461,7 +461,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     return MAIN_MENU
 
 # ─── main ─────────────────────────────────────────────────────────────────────
-def main():
+async def main():
     app = Application.builder().token(BOT_TOKEN).build()
 
     conv = ConversationHandler(
@@ -488,8 +488,12 @@ def main():
     app.add_handler(CommandHandler("help", help_command))
 
     logger.info("Bot ishga tushdi...")
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+    await app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        pass
